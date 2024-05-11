@@ -7,7 +7,10 @@ const port = process.env.PORT || 5000;
 
 
 // middlewares
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:5173'],
+  credentials: true
+}));
 app.use(express.json());
 
 
@@ -30,6 +33,17 @@ async function run() {
     
     const foodCollection = client.db('foodDB').collection('food');
     
+    
+    
+    // ! get all featured Foods
+    app.get('/featuredFoods', async(req, res)=>{
+      const email = req.query.email;
+      const query = {donatorEmail: email}
+
+      const result = await foodCollection.find(query).toArray();
+      res.send(result)
+    })
+
 
 
     // Send a ping to confirm a successful connection
