@@ -54,6 +54,15 @@ async function run() {
     })
 
 
+    // ! get All Available Foods
+    app.get('/availableFoods', async(req, res) =>{
+      const foodStatus = req.query.foodStatus;
+      console.log(foodStatus)
+      const query = {foodStatus: foodStatus}
+      const result = await foodCollection.find(query).toArray();
+      res.send(result)
+    })
+
     // ! post a food 
     app.post('/addFood', async(req, res) =>{
       const newFood = req.body;
