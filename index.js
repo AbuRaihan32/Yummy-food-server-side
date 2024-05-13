@@ -69,6 +69,33 @@ async function run() {
       res.send(result);
     })
 
+    // ! update food by user in manage my food pag
+    app.put('/updateFood/:id', async(req, res)=>{
+      const id = req.params.id;
+      const food = req.body;
+      const filter = {_id: new ObjectId(id)}
+      const options = { upsert: true };
+
+      
+      const updatedFood = {
+        $set: {
+          foodName: food.foodName,
+          foodImage: food.foodImage,
+          quantityAvailable: food.quantityAvailable,
+          pickupLocation: food.pickupLocation,
+          expiryDateTime: food.expiryDateTime,
+          additionalNotes: food.additionalNotes,
+          foodStatus: food.foodStatus,
+          donatorImage: food.donatorImage,
+          donatorName: food.donatorName,
+          donatorEmail: food.donatorEmail,
+        }
+      }
+      const result = await foodCollection.updateOne(filter, updatedFood, options);
+      res.send(result);
+      
+    })
+
     // ! update a food as Requested
     app.put('/requestFood/:id', async(req, res)=>{
       const id = req.params.id;
