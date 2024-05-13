@@ -8,7 +8,7 @@ const port = process.env.PORT || 5000;
 
 // middlewares
 app.use(cors({
-  origin: ['http://localhost:5173'],
+  origin: ['http://localhost:5173', 'https://yummy-food-f714c.web.app'],
   credentials: true
 }));
 app.use(express.json());
@@ -35,7 +35,7 @@ async function run() {
     
     
     
-    // ! get all featured Foods
+    // ! get all Foods by email
     app.get('/featuredFoods', async(req, res)=>{
       const email = req.query.email;
       const query = {donatorEmail: email}
@@ -57,7 +57,6 @@ async function run() {
     // ! get All Available Foods
     app.get('/availableFoods', async(req, res) =>{
       const foodStatus = req.query.foodStatus;
-      console.log(foodStatus)
       const query = {foodStatus: foodStatus}
       const result = await foodCollection.find(query).toArray();
       res.send(result)
@@ -69,6 +68,28 @@ async function run() {
       const result = await foodCollection.insertOne(newFood);
       res.send(result);
     })
+
+    // ! update a food as Requested
+    app.put('/requestFood/:id', async(req, res)=>{
+      const id = req.params.id;
+      const food = req.body;
+      const filter = {_id: new ObjectId(id)}
+      const options = { upsert: true };
+
+      const updatedFood = {
+        $set: {
+          foodStatus : 'Requested',
+          foodId : id,
+          requestDate : food.requestDate,
+          requester: food.userEmail
+        }
+      }
+
+      const result = await foodCollection.updateOne(filter, updatedFood, options);
+      res.send(result);
+      
+    })
+
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
