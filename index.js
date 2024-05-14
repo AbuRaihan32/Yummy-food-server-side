@@ -17,18 +17,21 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
-// ! custom middleware 
-const verifyToken = async (req, res, next)=>{
+// ! custom middleware
+const verifyToken = async (req, res, next) => {
   const token = req.cookies.token;
-  console.log('from middleware', token)
-  
+  if (!token) {
+    return res.status(401).send({ message: "Unauthorized" });
+  }
+  jwt.verify(token, process.env.TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).send({ message: "Unauthorized" });
+    }
 
-  
-  next();
-}
-
-
-
+    req.user = decoded;
+    next();
+  });
+};
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.fxbdhbr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -64,16 +67,25 @@ async function run() {
       res.cookie("token", token, cookieOptions).send({ status: true });
     });
 
-
-
-
+    // ! clear token when logged out
+    app.post("/logout", async (req, res) => {
+      console.log("hello");
+      res
+        .clearCookie("token", { ...cookieOptions, maxAge: 0 })
+        .send({ status: true });
+    });
 
     // !---------------------------------------------------------!\\
 
     // ! get all Foods by email
-    app.get("/featuredFoods", async (req, res) => {
-      const email = req.query.email;
-      const query = { donatorEmail: email };
+    app.get("/featuredFoods", verifyToken, async (req, res) => {
+      if (req.user.email !== req.query.userEmail) {
+        return res.status(403).send({ message: "forbidden" });
+      }
+      let query = {};
+      if (req.query?.email) {
+        query = { donatorEmail: req.query.email };
+      }
 
       const result = await foodCollection.find(query).toArray();
       res.send(result);
@@ -95,11 +107,19 @@ async function run() {
       res.send(result);
     });
 
-    // ! get All Requested Foods
+    // ! get All Requested Foods (private)
     app.get("/requestedFoods", verifyToken, async (req, res) => {
+      if (req.user.email !== req.query.userEmail) {
+        return res.status(403).send({ message: "forbidden" });
+      }
       const foodStatus = req.query.foodStatus;
       const requesterEmail = req.query.userEmail;
-      const query = { foodStatus: foodStatus, requester: requesterEmail };
+
+      let query = {};
+      if (req.query?.userEmail) {
+        query = { foodStatus: foodStatus, requester: requesterEmail };
+      }
+
       const result = await foodCollection.find(query).toArray();
       res.send(result);
     });
