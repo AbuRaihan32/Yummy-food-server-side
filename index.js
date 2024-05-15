@@ -10,7 +10,11 @@ const port = process.env.PORT || 5000;
 // middlewares
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://yummy-food-f714c.web.app"],
+    origin: [
+      "http://localhost:5173",
+      "https://yummy-food-f714c.web.app",
+      "https://yummy-food-f714c.firebaseapp.com",
+    ],
     credentials: true,
   })
 );
@@ -53,7 +57,7 @@ const cookieOptions = {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const foodCollection = client.db("foodDB").collection("food");
     const teamCollection = client.db("foodDB").collection("team");
@@ -79,7 +83,7 @@ async function run() {
 
     // ! get all Foods by email
     app.get("/featuredFoods", verifyToken, async (req, res) => {
-      if (req.user.email !== req.query.userEmail) {
+      if (req.user.email !== req.query.email) {
         return res.status(403).send({ message: "forbidden" });
       }
       let query = {};
@@ -92,7 +96,7 @@ async function run() {
     });
 
     // ! get single Foods
-    app.get("/singleFood/:id", async (req, res) => {
+    app.get("/singleFood/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await foodCollection.findOne(query);
@@ -125,20 +129,21 @@ async function run() {
     });
 
     // ! post a food
-    app.post("/addFood", async (req, res) => {
+    app.post("/addFood", verifyToken, async (req, res) => {
       const newFood = req.body;
       const result = await foodCollection.insertOne(newFood);
       res.send(result);
     });
 
     // ! get team info
-    app.get("/team", async (req, res) => {
+    app.get("/teams", async (req, res) => {
+      console.log("hello");
       const result = await teamCollection.find().toArray();
       res.send(result);
     });
 
     // ! update food by user in manage my food pag
-    app.put("/updateFood/:id", async (req, res) => {
+    app.put("/updateFood/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const food = req.body;
       const filter = { _id: new ObjectId(id) };
@@ -167,7 +172,7 @@ async function run() {
     });
 
     // ! update a food as Requested
-    app.put("/requestFood/:id", async (req, res) => {
+    app.put("/requestFood/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const food = req.body;
       const filter = { _id: new ObjectId(id) };
@@ -191,7 +196,7 @@ async function run() {
     });
 
     // ! delete food
-    app.delete("/deleteFood/:id", async (req, res) => {
+    app.delete("/deleteFood/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await foodCollection.deleteOne(query);
@@ -199,10 +204,10 @@ async function run() {
     });
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    // await client.db("admin").command({ ping: 1 });
+    // console.log(
+    //   "Pinged your deployment. You successfully connected to MongoDB!"
+    // );
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
